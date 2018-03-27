@@ -37,44 +37,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         setup()
         
-        self.ball = self.childNode(withName: "Ball") as! SKSpriteNode
-        self.cpuPaddle = self.childNode(withName: "CPUPaddle") as! SKSpriteNode
-        self.playerPaddle = self.childNode(withName: "PlayerPaddle") as! SKSpriteNode
-        
-        self.cpuScoreL = self.childNode(withName: "CPUScore") as! SKLabelNode
-        self.playerScoreL = self.childNode(withName: "PlayerScore") as! SKLabelNode
-        self.stopL = self.childNode(withName: "StopL") as! SKLabelNode
-        self.stopL.isUserInteractionEnabled = true
-        
-        self.playerGoal = self.childNode(withName: "PlayerGoal") as! SKSpriteNode
-        self.cpuGoal = self.childNode(withName: "CPUGoal") as! SKSpriteNode
-        
-        self.resetScoreL = self.childNode(withName: "ResetScore") as! SKLabelNode
-        
-        let border = SKPhysicsBody(edgeLoopFrom: self.frame)
-        border.friction = 0
-        border.restitution = 1
-        
-        self.physicsBody = border
-        
-        // Collision tracking time!
-        self.physicsWorld.contactDelegate = self
-        
-        self.timer?.cancel()
-        
-        self.timer = DispatchSource.makeTimerSource()
-        self.timer.schedule(deadline: .now(), repeating: .milliseconds(500), leeway: .milliseconds(100))
-        
-        self.timer.setEventHandler {
-            
-            if self.isPlaying {
-                
-                self.addLoc(loc: self.ball.position)
-                
-            }
-            
-        }
-        
         startGame()
         
     }
@@ -112,19 +74,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 return
             }
             
-            if loc.y < -219.0 {
+            if loc.y < -319.0 {
                 
-                self.playerPaddle.run(.moveTo(y: -219.0, duration: 0.3))
+                self.playerPaddle.run(.moveTo(y: -319.0, duration: 0.3))
                 
-            } else if loc.y > 219.0 {
+            } else if loc.y > 319.0 {
                 
-                self.playerPaddle.run(.moveTo(y: 219.0, duration: 0.3))
+                self.playerPaddle.run(.moveTo(y: 319.0, duration: 0.3))
                 
+            } else {
+            
+                self.playerPaddle.run(.moveTo(y: loc.y, duration: 0.3))
+            
             }
-            
-            self.playerPaddle.run(.moveTo(y: loc.y, duration: 0.3))
-            
-            
             
         }
     }
@@ -142,7 +104,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
         }
         
-
+        var pos = self.ball.position.y
+        
+        if pos > 319.0 {
+            
+            pos = 319.0
+            
+        } else if pos < -319.0 {
+            
+            pos = -319.0
+            
+        }
         
         
         if self.playerScore < 5 {
@@ -189,7 +161,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         self.isPlaying = true
         
-        self.timer?.resume()
+        
         
         self.stopL.text = "Stop"
         self.resetScoreL.run(.fadeOut(withDuration: 0.3))
@@ -218,8 +190,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     func stopGame() {
         
         self.isPlaying = false
-        
-        self.timer?.cancel()
         
         self.ball.physicsBody?.velocity = .zero
         self.resetScoreL.run(.fadeIn(withDuration: 0.5))
@@ -311,6 +281,44 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let customFontURL = Bundle.main.url(forResource: "Phosphate", withExtension: "ttc")! as CFURL
         
         CTFontManagerRegisterFontsForURL(customFontURL, .process, nil)
+        
+        
+        self.ball = self.childNode(withName: "Ball") as! SKSpriteNode
+        self.cpuPaddle = self.childNode(withName: "CPUPaddle") as! SKSpriteNode
+        self.playerPaddle = self.childNode(withName: "PlayerPaddle") as! SKSpriteNode
+        
+        self.cpuScoreL = self.childNode(withName: "CPUScore") as! SKLabelNode
+        self.playerScoreL = self.childNode(withName: "PlayerScore") as! SKLabelNode
+        self.stopL = self.childNode(withName: "StopL") as! SKLabelNode
+        self.stopL.isUserInteractionEnabled = true
+        
+        self.playerGoal = self.childNode(withName: "PlayerGoal") as! SKSpriteNode
+        self.cpuGoal = self.childNode(withName: "CPUGoal") as! SKSpriteNode
+        
+        self.resetScoreL = self.childNode(withName: "ResetScore") as! SKLabelNode
+        
+        let border = SKPhysicsBody(edgeLoopFrom: self.frame)
+        border.friction = 0
+        border.restitution = 1
+        
+        self.physicsBody = border
+        
+        // Collision tracking time!
+        self.physicsWorld.contactDelegate = self
+        
+        // Creating timer for ball
+        self.timer = DispatchSource.makeTimerSource()
+        self.timer.schedule(deadline: .now(), repeating: .milliseconds(500), leeway: .milliseconds(100))
+        
+        self.timer.setEventHandler {
+            
+            if self.isPlaying {
+                
+                self.addLoc(loc: self.ball.position)
+                
+            }
+            
+        }
         
     }
     
