@@ -3,16 +3,24 @@ import SpriteKit
 import Accelerate
 import AVFoundation
 
-// Can't have audio inside if let, because it wont run for some reason... Works fine with this workaround.
+/*:
+
+ # VoicePong
+ 
+ Welcome to VoicePong! A game of Pong, controlled by your voice!
+ 
+> PLEASE MAKE SURE ASSISTANT EDITOR IS OPEN
+ 
+ */
+
 var gameScene: GameScene?
 
 // Load the SKScene from 'GameScene.sks'
 let sceneView = SKView(frame: CGRect(x:0 , y:0, width: 640, height: 480))
 
 if let scene = GameScene(fileNamed: "GameScene") {
-    // Set the scale mode to scale to fit the window
     
-    // Errors may be thrown for line 16 and 17, this is an Xcode bug, everything is working fine.
+    // Errors may be thrown for line 24 and 25, this is an Xcode bug, everything is working fine, I belive it has to do with the live code updates on the right hand side (Not the assistant editor, but when you can get the quick look, etc)
     scene.scaleMode = .aspectFill
     gameScene = scene
     // Present the scene
@@ -23,8 +31,6 @@ if let scene = GameScene(fileNamed: "GameScene") {
 guard gameScene != nil else { print("GAME SCENE NOT LOADED PROPERLY"); exit(1)
     
 }
-
-var frameCount = 0
 
 let engine = AVAudioEngine()
 
@@ -48,15 +54,18 @@ inputNode.installTap(onBus: 0, bufferSize: 1024, format: inputNode.outputFormat(
 
     let volume = CGFloat(maxVol)
     
+    // Amplyfing the volume based on the microhpone sensitivity.
     let normalized = volume * gameScene!.micSensitivity.rawValue
     
+    // Setting the paddle position to the volume, and ofsetting by -319, so that the paddle rests on the bottom of the screen.
     paddlePosition = normalized - 319.0
-    
 
+    // Telling the GameScene to move the paddle.
     gameScene?.movePaddle(to: paddlePosition)
 
 }
 
+// Preparing the AudioEngine and trying to Start it.
 engine.prepare()
 
 do {

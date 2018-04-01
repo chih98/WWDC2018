@@ -6,6 +6,7 @@ import Cocoa
 
 public class GameScene: SKScene, SKPhysicsContactDelegate {
     
+    // Node Objects
     var ball = SKSpriteNode()
     var cpuPaddle = SKSpriteNode()
     var playerPaddle = SKSpriteNode()
@@ -22,19 +23,16 @@ public class GameScene: SKScene, SKPhysicsContactDelegate {
     // Camera
     var mainCamera = SKCameraNode()
     
+    // Scores
     var playerScore = 0
     var cpuScore = 0
     
     // Sometimes the ball likes stick to a side. These ints count up to 2. If an int equals 2, the program will apply a 45º SE, or NE force to knock the ball out of the wall.
-    var xCount: Int = 0
-    var yCount: Int = 0
-    
     var prevX: CGFloat = 0.0
     var prevY: CGFloat = 0.0
-
     
+    // Game Data
     var isPlaying = false
-    var ballVector: Int = 20 // How hard to nudge the ball at the beginning. Determines ball speed
     
     var timer: Timer?
     
@@ -50,6 +48,7 @@ public class GameScene: SKScene, SKPhysicsContactDelegate {
     var startB = SKSpriteNode()
     
     // - TEXTURES -
+    
     // Ball Speed
     let slowNormal = SKTexture(imageNamed: "Buttons/Ball-Speed/Slow-Normal.png")
     let slowHighlighted = SKTexture(imageNamed: "Buttons/Ball-Speed/Slow-Highlighted.png")
@@ -71,12 +70,12 @@ public class GameScene: SKScene, SKPhysicsContactDelegate {
     let highHighlighted = SKTexture(imageNamed: "Buttons/Mic-Sensitivity/Sensitive-Highlighted.png")
     
     // - MISC -
-    // Ball Speed
-    enum Speed {
+    // Ball Speed ENUM
+    enum Speed: Int {
         
-        case slow
-        case medium
-        case fast
+        case slow = 20
+        case medium = 40
+        case fast = 60
         
     }
     
@@ -93,7 +92,8 @@ public class GameScene: SKScene, SKPhysicsContactDelegate {
     
     public var micSensitivity: Sensitivity = .medium
     
-     override public func didMove(to view: SKView) {
+    
+    override public func didMove(to view: SKView) {
         
         setup()
         
@@ -101,9 +101,11 @@ public class GameScene: SKScene, SKPhysicsContactDelegate {
     
     override public func mouseDown(with event: NSEvent) {
         
+        // Getting mouse location
         let loc = event.location(in: self)
-
-            
+        
+        
+        // Checking if a node is at the mouse location, and doing the appropriate action
         if self.nodes(at: loc).contains(self.stopL) {
             
             if self.stopL.text == "Stop" {
@@ -132,9 +134,9 @@ public class GameScene: SKScene, SKPhysicsContactDelegate {
             self.mainCamera.run(.moveTo(x: 0, duration: 0.5))
             
             Timer.scheduledTimer(withTimeInterval: 0.7, repeats: false) { (_) in
-            
+                
                 self.startGame()
-            
+                
             }
             
             
@@ -150,7 +152,7 @@ public class GameScene: SKScene, SKPhysicsContactDelegate {
             self.ballSpeed = .slow
             
         } else if self.nodes(at: loc).contains(self.mediumB) {
-        
+            
             self.slowB.texture = self.slowNormal
             self.mediumB.texture = self.mediumHighlighted
             self.fastB.texture = self.fastNormal
@@ -191,10 +193,6 @@ public class GameScene: SKScene, SKPhysicsContactDelegate {
     
     override public func update(_ currentTime: TimeInterval) {
         
-        // Making CPU Work
-        
-        // Working with game difficulty. The higher the player's score, the faster the CPU moves!
-        
         if (!intersects(self.ball)) {
             
             // Ball is out of screen
@@ -204,6 +202,7 @@ public class GameScene: SKScene, SKPhysicsContactDelegate {
         
         var pos = self.ball.position.y
         
+        // Making sure CPU paddle doesnt leave the game
         if pos > 319.0 {
             
             pos = 319.0
@@ -214,6 +213,7 @@ public class GameScene: SKScene, SKPhysicsContactDelegate {
             
         }
         
+        // Working with game difficulty. The higher the player's score, the faster the CPU moves!
         var computerSpeed: TimeInterval = 1.0
         
         
@@ -221,12 +221,12 @@ public class GameScene: SKScene, SKPhysicsContactDelegate {
             
             switch self.ballSpeed {
                 
-                case .slow:
-                    computerSpeed = 1.0
-                case .medium:
-                    computerSpeed = 0.8
-                default:
-                    computerSpeed = 0.5
+            case .slow:
+                computerSpeed = 1.0
+            case .medium:
+                computerSpeed = 0.8
+            default:
+                computerSpeed = 0.5
                 
             }
             
@@ -312,9 +312,11 @@ public class GameScene: SKScene, SKPhysicsContactDelegate {
         self.cpuPaddle.run(.moveTo(y: self.ball.position.y, duration: computerSpeed))
         
     }
-    
+
+    // Called when a colission happens
     public func didBegin(_ contact: SKPhysicsContact) {
         
+        // Checking if a ball hits a goal
         if contact.bodyA == self.ball.physicsBody && contact.bodyB == self.playerGoal.physicsBody || contact.bodyA == self.playerGoal.physicsBody && contact.bodyB == self.ball.physicsBody {
             
             self.cpuScore += 1
@@ -361,8 +363,8 @@ public class GameScene: SKScene, SKPhysicsContactDelegate {
         }
         
     }
-
     
+    // Shows score when point is won
     func flashScore() {
         
         let scoreSequence = SKAction.sequence([.fadeIn(withDuration: 0.3), .wait(forDuration: 0.3), .fadeOut(withDuration: 0.3)])
@@ -373,57 +375,45 @@ public class GameScene: SKScene, SKPhysicsContactDelegate {
         
     }
     
-    /// Add ball's point to update and check arrays
+    // Calculates ball's position so if the ball is stuck to a wall, it will nudge it.
     func addLoc(loc: CGPoint) {
         
-        // If this isn't here, then the game automatically starts after a few seconds. It's before the DispatchQueue, because calling the background thread for nothing is just plain stupid.
+        // If this isn't here, then the game automatically starts after a half of a second.
         guard loc != CGPoint(x: 0.0, y: 0.0) && self.isPlaying == true else { return }
         
-        if self.xCount >= 2 {
+        // Read line 378
+        if loc.x == self.prevX {
             
-            self.xCount = 0
             self.ball.physicsBody?.velocity = .zero
             
             if loc.x > self.prevX {
                 
-                self.ball.physicsBody?.applyImpulse(CGVector(dx: self.ballVector, dy: self.ballVector))
+                self.ball.physicsBody?.applyImpulse(CGVector(dx: self.ballSpeed.rawValue, dy: self.ballSpeed.rawValue))
                 
             } else {
                 
-                self.ball.physicsBody?.applyImpulse(CGVector(dx: -self.ballVector, dy: self.ballVector))
-
+                self.ball.physicsBody?.applyImpulse(CGVector(dx: -self.ballSpeed.rawValue, dy: self.ballSpeed.rawValue))
+                
             }
             
             
         }
         
-        if self.yCount >= 2 {
-            
-            self.yCount = 0
-            self.ball.physicsBody?.velocity = .zero
-
-            if loc.y > self.prevY {
-                
-                self.ball.physicsBody?.applyImpulse(CGVector(dx: self.ballVector, dy: -self.ballVector))
-                
-            } else {
-                
-                self.ball.physicsBody?.applyImpulse(CGVector(dx: self.ballVector, dy: self.ballVector))
-
-                
-            }
-            
-        }
-        
-        if loc.x == self.prevX {
-            
-            self.xCount += 1
-            
-        }
-        
+        // Read line 378
         if loc.y == self.prevY {
             
-            self.yCount += 1
+            self.ball.physicsBody?.velocity = .zero
+            
+            if loc.y > self.prevY {
+                
+                self.ball.physicsBody?.applyImpulse(CGVector(dx: self.ballSpeed.rawValue, dy: self.ballSpeed.rawValue))
+                
+            } else {
+                
+                self.ball.physicsBody?.applyImpulse(CGVector(dx: self.ballSpeed.rawValue, dy: -self.ballSpeed.rawValue))
+                
+                
+            }
             
         }
         
@@ -446,53 +436,42 @@ public class GameScene: SKScene, SKPhysicsContactDelegate {
         self.playerScoreL.run(SKAction.fadeOut(withDuration: 0.5))
         self.cpuScoreL.run(SKAction.fadeOut(withDuration: 0.5))
         
-        // Getting the ball speed, and applying appropriate vector.
-        
-        
-        switch self.ballSpeed {
-            
-            case .slow:
-                    self.ballVector = 20
-            
-            case .medium:
-                self.ballVector = 40
-            
-            default:
-                self.ballVector = 60
-            
-            
-        }
-        
+        // Getting the ball speed, and applying appropriate vector, randomly of course ;)
         let i = arc4random_uniform(3)
         switch i {
             
         case 0 :
-            self.ball.physicsBody?.applyImpulse(CGVector(dx: -self.ballVector, dy: -self.ballVector))
+            self.ball.physicsBody?.applyImpulse(CGVector(dx: -self.ballSpeed.rawValue, dy: -self.ballSpeed.rawValue))
             
         case 1:
-            self.ball.physicsBody?.applyImpulse(CGVector(dx: self.ballVector, dy: -self.ballVector))
+            self.ball.physicsBody?.applyImpulse(CGVector(dx: self.ballSpeed.rawValue, dy: -self.ballSpeed.rawValue))
             
         case 2:
-            self.ball.physicsBody?.applyImpulse(CGVector(dx: -self.ballVector, dy: self.ballVector))
+            self.ball.physicsBody?.applyImpulse(CGVector(dx: -self.ballSpeed.rawValue, dy: self.ballSpeed.rawValue))
             
         default:
-            self.ball.physicsBody?.applyImpulse(CGVector(dx: self.ballVector, dy: self.ballVector))
+            self.ball.physicsBody?.applyImpulse(CGVector(dx: self.ballSpeed.rawValue, dy: self.ballSpeed.rawValue))
             
         }
         
-        Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true, block: { (t) in
+        // Calculating ball position, read line 378. In background thread to aid with performance
+        DispatchQueue.global().async {
             
-            self.timer = t
-            self.addLoc(loc: self.ball.position)
-        
-        })
-        
+            Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true, block: { (t) in
+                
+                self.timer = t
+                self.addLoc(loc: self.ball.position)
+                
+            })
+            
+        }
     }
     
     func stopGame() {
         
         self.isPlaying = false
         
+        // Stop timer to save performance. Read the infamous line 378 for more info
         self.timer?.invalidate()
         
         self.stopL.text = "Begin"
@@ -501,9 +480,11 @@ public class GameScene: SKScene, SKPhysicsContactDelegate {
         self.resetScoreL.run(.fadeIn(withDuration: 0.5))
         self.mainMenuL.run(.fadeIn(withDuration: 0.5))
         
+        // Bring paddles to center
         self.playerScoreL.run(SKAction.fadeIn(withDuration: 0.5))
         self.cpuScoreL.run(SKAction.fadeIn(withDuration: 0.5))
         
+        // Cool little thing here, eh? If this timer isn't here, when you stop the game, it looks like theres a glitch, but with the slight delay the user understand that the ball's stopped, and then is moving to the center.
         Timer.scheduledTimer(withTimeInterval: 0.3, repeats: false) { (_) in
             
             self.ball.run(SKAction.move(to: CGPoint(x: 0, y: 0), duration: 0.3))
@@ -514,11 +495,11 @@ public class GameScene: SKScene, SKPhysicsContactDelegate {
     
     func setup() {
         
+        // Get the cool looking font.
         let customFontURL = Bundle.main.url(forResource: "Phosphate", withExtension: "ttc")! as CFURL
-        
         CTFontManagerRegisterFontsForURL(customFontURL, .process, nil)
         
-        
+        // Connecting the sks file string node names with the node objects on line 10
         self.ball = self.childNode(withName: "Ball") as! SKSpriteNode
         self.cpuPaddle = self.childNode(withName: "CPUPaddle") as! SKSpriteNode
         
@@ -563,6 +544,7 @@ public class GameScene: SKScene, SKPhysicsContactDelegate {
         
         self.camera?.position = CGPoint(x: -1050, y: 0)
         
+        // Setting the border so that the ball doesnt leave the stadium
         let border = SKPhysicsBody(edgeLoopFrom: self.frame)
         border.friction = 0
         border.restitution = 1
